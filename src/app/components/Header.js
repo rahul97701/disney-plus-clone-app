@@ -1,11 +1,66 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { auth, provider } from "../../firebase";
 import styled from "styled-components";
+import { useNavigate } from "react-router-dom";
+import {
+  selectUserName,
+  selectUserPhoto,
+  setSignOut,
+  setUserLogin
+} from "../../features/user/userSlice";
+import { useDispatch, useSelector } from "react-redux";
 
 function Header() {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const userName = useSelector(selectUserName);
+  const userPhoto = useSelector(selectUserPhoto);
+
+  useEffect(() =>{
+    auth.onAuthStateChanged(async (user)=>{
+      if(user){
+        dispatch(setUserLogin({
+          name: user.displayName,
+          email: user.email,
+          photo: user.photoURL
+        }))
+        navigate.push("/");
+      }
+    })
+  }, [])
+
+  const signIn = () => {
+     auth.signInWithPopup(provider)
+     .then((result)=> {
+      // console.log(result)
+      let user = result.user
+      dispatch(setUserLogin({
+        name: user.displayName,
+        email: user.email,
+        photo: user.photoURL
+      }))
+      navigate.push("/")
+     })
+  }
+
+  const signOut = () => {
+    auth.signOut()
+    .then(()=> {
+      dispatch(setSignOut());
+      navigate.push("/login");
+    })
+  }
+
   return (
     <Nav>
       <Logo src="/images/logo.svg" />
-      <NavMenu>
+      {/* { !userName ? (
+        <LoginContainer>
+              <Login onClick={signIn}>Login</Login> 
+        </LoginContainer>
+        ): */}
+        <>
+          <NavMenu>
         <a>
           <img src="/images/home-icon.svg" />
           <span>HOME</span>
@@ -31,8 +86,12 @@ function Header() {
           <span>SERIES</span>
         </a>
       </NavMenu>
-      <UserImg src="" />
-    </Nav>
+      <UserImg 
+      onClick={signOut}
+      src="/images/profile.png" />
+          </>
+      {/* } */}
+      </Nav>
   );
 }
 
@@ -101,3 +160,25 @@ const UserImg = styled.img`
   border-radius: 50%;
   cursor: pointer;
 `;
+
+const Login = styled.div`
+border: 1px solid #f9f9f9;
+padding: 8px 16px;
+border-radius:4px;
+letter-spacing: 1.5px;
+text-transform: uppercase;
+background-color: rgba(0, 0, 0, 0.6);
+transition: all 0.2s ease 0s;
+cursor: pointer;
+
+&:hover {
+ background-color: #f9f9f9;
+ color: #000;
+ border-color: transparent;
+}
+`
+const LoginContainer = styled.div`
+flex: 1;
+display: flex;
+flex-direction: row-reverse;
+`
